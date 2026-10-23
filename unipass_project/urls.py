@@ -1,8 +1,10 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
+from django.shortcuts import redirect
 
 urlpatterns = [
+    path('', lambda request: redirect('mis_bicicletas')),
     path('admin/', admin.site.urls),
     
     # Ruta para el inicio de sesión
@@ -13,4 +15,7 @@ urlpatterns = [
     path('cuentas/', include('cuentas.urls')),
     path('bicicletas/', include('bicicletas.urls')),
     path('accesos/', include('accesos.urls')),
+
+  
+
 ]
