@@ -59,6 +59,29 @@ class ControlDeAccesoTests(TestCase):
         self.assertEqual(self.client.get(reverse("editar_bicicleta", args=[self.bici.pk])).status_code, 302)
         self.assertEqual(self.client.get(reverse("lista_usuarios")).status_code, 302)
 
+    def test_guardia_encuentra_la_bicicleta_por_folio_o_por_qr(self):
+        self.client.force_login(self.guardia)
+        pagina = self.client.get(reverse("verificar_acceso"))
+        self.assertContains(pagina, "Escanear con cámara")
+        self.assertContains(pagina, "Ingresar folio")
+        por_folio = self.client.post(reverse("verificar_acceso"), {"folio": self.bici.numero_folio})
+        self.assertContains(por_folio, "Benotto")
+        por_qr = self.client.post(reverse("verificar_acceso"), {"codigo": str(self.bici.qr_token)})
+        self.assertContains(por_qr, "Benotto")
+
+    def test_folio_y_qr_rechazan_caracteres_especiales(self):
+        self.client.force_login(self.guardia)
+        for payload in ("104' OR '1'='1", "<script>alert(1)</script>", "F-1;DROP TABLE", "104<img>"):
+            respuesta = self.client.post(reverse("verificar_acceso"), {"folio": payload})
+            self.assertContains(respuesta, "solo puede tener letras")
+            self.assertNotContains(respuesta, "Benotto")
+        mezcla = self.client.post(
+            reverse("verificar_acceso"),
+            {"codigo": "<script>" + str(self.bici.qr_token) + "</script>"},
+        )
+        self.assertContains(mezcla, "no es válido")
+        self.assertNotContains(mezcla, "Benotto")
+
     def test_guardia_registra_con_el_token_no_con_un_id(self):
         self.client.force_login(self.guardia)
         respuesta = self.client.post(
@@ -104,3 +127,69 @@ class ControlDeAccesoTests(TestCase):
             respuesta = self.client.get(reverse("lista_usuarios"))
         self.assertRedirects(respuesta, reverse("login"))
         self.assertNotIn("_auth_user_id", self.client.session)
+
+
+class CaracteresEspecialesTests(TestCase):
+    def test_perfil_de_alumno_rechaza_script_y_sql(self):
+        from cuentas.forms import PerfilForm
+
+        form = PerfilForm(
+            data={
+                "first_name": "<script>alert(1)</script>",
+                "last_name": "Fragoso'; DROP TABLE",
+                "email": "freddy@utvam.edu.mx",
+                "matricula": "A001",
+                "password1": "",
+                "password2": "",
+            },
+            puede_editar_matricula=True,
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("first_name", form.errors)
+        self.assertIn("last_name", form.errors)
+
+    def test_perfil_rechaza_simbolos_de_inyeccion_en_la_contrasena(self):
+        from cuentas.forms import PerfilForm
+
+        form = PerfilForm(
+            data={
+                "first_name": "Freddy",
+                "last_name": "Fragoso",
+                "email": "freddy@utvam.edu.mx",
+                "password1": "Clave<script>1",
+                "password2": "Clave<script>1",
+            }
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("password1", form.errors)
+
+    def test_admin_rechaza_caracteres_en_cuenta_y_bicicleta(self):
+        from bicicletas.forms import BicicletaForm, CaracteristicasBicicletaForm
+        from cuentas.forms import NuevoUsuarioForm
+        from cuentas.permisos import ALUMNO
+
+        cuenta = NuevoUsuarioForm(
+            data={
+                "username": "alumno<script>",
+                "first_name": "Ana",
+                "last_name": "Lopez",
+                "email": "ana@utvam.edu.mx",
+                "matricula": "A-01",
+                "tipo": ALUMNO,
+            }
+        )
+        self.assertFalse(cuenta.is_valid())
+        self.assertIn("username", cuenta.errors)
+
+        bici = BicicletaForm(
+            data={"numero_folio": "104;DROP", "marca": "Benotto", "color": "Roja"}
+        )
+        self.assertFalse(bici.is_valid())
+        self.assertIn("numero_folio", bici.errors)
+
+        edicion = CaracteristicasBicicletaForm(
+            data={"marca": "Roja<img>", "color": "Azul"},
+            incluir_folio=False,
+        )
+        self.assertFalse(edicion.is_valid())
+        self.assertIn("marca", edicion.errors)

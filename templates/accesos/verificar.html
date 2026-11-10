@@ -7,13 +7,39 @@
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body p-4 text-center">
-                    <h1 class="h3 fw-bold mb-2">Control de acceso</h1>
-                    <p class="text-muted">Escanea el código QR de la bicicleta.</p>
-                    <form method="post" class="d-flex gap-2 justify-content-center">
+                <div class="card-body p-4">
+                    <h1 class="h3 fw-bold mb-2 text-center">Control de acceso</h1>
+                    <p class="text-muted text-center">Elige cómo identificar la bicicleta.</p>
+                    <div class="d-grid gap-2 d-sm-flex justify-content-center">
+                        <button type="button" class="btn btn-primary btn-lg" id="btn-camara">Escanear con cámara</button>
+                        <button type="button" class="btn btn-outline-primary btn-lg" id="btn-folio">Ingresar folio</button>
+                    </div>
+
+                    <div id="panel-camara" class="d-none mt-4">
+                        <p class="small text-muted text-center mb-2">El navegador pedirá permiso para usar la cámara del teléfono o la cámara web.</p>
+                        <div id="lector" class="mx-auto" style="max-width: 420px;"></div>
+                        <p id="aviso-camara" class="text-danger small text-center mt-2 mb-0"></p>
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-detener">Detener cámara</button>
+                        </div>
+                    </div>
+
+                    <div id="panel-folio" class="d-none mt-4">
+                        <form method="post" class="mx-auto" style="max-width: 420px;" autocomplete="off">
+                            {% csrf_token %}
+                            <label class="form-label" for="id_folio">Folio de la bicicleta</label>
+                            <input type="text" name="folio" id="id_folio" class="form-control form-control-lg text-center"
+                                   maxlength="50" pattern="[A-Za-z0-9-]{1,50}" inputmode="text"
+                                   placeholder="Ej. 104" value="{{ folio }}" required
+                                   title="Solo letras, números y guiones">
+                            <p class="form-text">Solo letras, números y guiones. No se aceptan otros caracteres.</p>
+                            <button type="submit" class="btn btn-primary w-100 mt-2">Buscar folio</button>
+                        </form>
+                    </div>
+
+                    <form method="post" id="form-qr" class="d-none">
                         {% csrf_token %}
-                        <input type="text" name="codigo" class="form-control form-control-lg w-75 text-center" placeholder="Código QR" value="{{ query }}" autofocus required>
-                        <button type="submit" class="btn btn-primary btn-lg">Buscar</button>
+                        <input type="hidden" name="codigo" id="codigo-qr">
                     </form>
                 </div>
             </div>
@@ -48,4 +74,69 @@
         </div>
     </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+(function () {
+    var panelCamara = document.getElementById("panel-camara");
+    var panelFolio = document.getElementById("panel-folio");
+    var aviso = document.getElementById("aviso-camara");
+    var lector = null;
+    var activa = false;
+
+    function detener() {
+        if (!lector || !activa) {
+            return Promise.resolve();
+        }
+        return lector.stop().then(function () {
+            activa = false;
+            lector.clear();
+        }).catch(function () {
+            activa = false;
+        });
+    }
+
+    document.getElementById("btn-folio").addEventListener("click", function () {
+        detener().finally(function () {
+            panelCamara.classList.add("d-none");
+            panelFolio.classList.remove("d-none");
+            document.getElementById("id_folio").focus();
+        });
+    });
+
+    document.getElementById("btn-detener").addEventListener("click", function () {
+        detener();
+    });
+
+    document.getElementById("btn-camara").addEventListener("click", function () {
+        panelFolio.classList.add("d-none");
+        panelCamara.classList.remove("d-none");
+        aviso.textContent = "";
+        if (!window.Html5Qrcode || !navigator.mediaDevices) {
+            aviso.textContent = "Este navegador no puede usar la cámara.";
+            return;
+        }
+        if (!lector) {
+            lector = new Html5Qrcode("lector");
+        }
+        lector.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: 220 },
+            function (texto) {
+                detener().finally(function () {
+                    document.getElementById("codigo-qr").value = (texto || "").trim();
+                    document.getElementById("form-qr").submit();
+                });
+            }
+        ).then(function () {
+            activa = true;
+        }).catch(function () {
+            aviso.textContent = "No se pudo activar la cámara. Permite el acceso en el navegador e inténtalo de nuevo.";
+        });
+    });
+
+    if (document.getElementById("id_folio").value) {
+        panelFolio.classList.remove("d-none");
+    }
+})();
+</script>
 {% endblock %}

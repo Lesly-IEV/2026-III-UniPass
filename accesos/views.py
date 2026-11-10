@@ -1,3 +1,4 @@
+import re
 import uuid
 
 from django.contrib import messages
@@ -8,16 +9,30 @@ from cuentas.permisos import ESCANEAR, VER_HISTORIAL, requiere
 
 from .models import RegistroAcceso
 
+_UUID_EXACTO = re.compile(
+    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+)
+_FOLIO_EXACTO = re.compile(r"^[A-Za-z0-9-]{1,50}$")
 
-def _buscar_por_token(valor):
+
+def _consulta():
+    return Bicicleta.objects.select_related("usuario__user")
+
+
+def _buscar_qr(valor):
+    """Solo un UUID completo. Cualquier otro carácter se rechaza."""
     texto = (valor or "").strip()
-    if not texto:
+    if not _UUID_EXACTO.fullmatch(texto):
         return None
-    try:
-        token = uuid.UUID(texto)
-    except ValueError:
-        return None
-    return Bicicleta.objects.filter(qr_token=token).select_related("usuario__user").first()
+    return _consulta().filter(qr_token=uuid.UUID(texto)).first()
+
+
+def _buscar_folio(valor):
+    """Solo letras, números y guion. El resto no se consulta."""
+    texto = (valor or "").strip()
+    if not _FOLIO_EXACTO.fullmatch(texto):
+        return None, "El folio solo puede tener letras, números y guiones."
+    return _consulta().filter(numero_folio__iexact=texto).first(), None
 
 
 @requiere(VER_HISTORIAL)
@@ -32,28 +47,38 @@ def historial_accesos(request):
 @requiere(ESCANEAR)
 def verificar_acceso(request):
     bicicleta = None
-    query = ""
+    folio = ""
 
     if request.method == "POST":
-        accion = request.POST.get("action")
-        query = (request.POST.get("codigo") or request.POST.get("qr_token") or "").strip()[:80]
-
+        accion = request.POST.get("action") or ""
         if accion in ("registrar_entrada", "registrar_salida"):
-            bicicleta = _buscar_por_token(request.POST.get("qr_token"))
+            bicicleta = _buscar_qr(request.POST.get("qr_token"))
             if bicicleta is None:
                 messages.error(request, "El código QR no corresponde a una bicicleta registrada.")
             else:
                 _registrar_movimiento(request, bicicleta, accion)
             return redirect("verificar_acceso")
+
+        if "folio" in request.POST:
+            bicicleta, error = _buscar_folio(request.POST.get("folio"))
+            if error:
+                messages.error(request, error)
+            elif bicicleta is None:
+                messages.error(request, "No se encontró una bicicleta con ese folio.")
+                folio = request.POST.get("folio").strip()
+                if not _FOLIO_EXACTO.fullmatch(folio):
+                    folio = ""
+            else:
+                folio = bicicleta.numero_folio
         else:
-            bicicleta = _buscar_por_token(query)
+            bicicleta = _buscar_qr(request.POST.get("codigo"))
             if bicicleta is None:
-                messages.error(request, "No se encontró una bicicleta con ese código QR.")
+                messages.error(request, "El código QR no es válido o no está registrado.")
 
     return render(
         request,
         "accesos/verificar.html",
-        {"bicicleta": bicicleta, "query": query},
+        {"bicicleta": bicicleta, "folio": folio},
     )
 
 
