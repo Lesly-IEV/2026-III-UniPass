@@ -1,121 +1,58 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
+{% block title %}Bicicletas · UniPass{% endblock %}
 
 {% block content %}
 <div class="container py-4">
-
-   
-    {% if request.user.perfilusuario.rol == 'admin' or request.user.perfilusuario.rol == 'administrativo' or request.user.perfil.rol == 'admin' or request.user.perfil.rol == 'administrativo' %}
-        
-        <div class="p-5 mb-4 bg-light rounded-3 border shadow-sm">
-            <div class="container-fluid py-2">
-                <h1 class="display-5 fw-bold text-primary">👋 ¡Bienvenido, Administrador!</h1>
-                <p class="col-md-8 fs-4 text-muted">
-                    Panel principal del sistema <strong>UniPass</strong>. Desde aquí puedes gestionar los registros del sistema y supervisar los accesos.
-                </p>
-            </div>
-        </div>
-
-        <h4 class="fw-bold mb-3">Acciones Rápidas</h4>
-<div class="row g-4">
-    
-    <div class="col-md-4">
-        <div class="card h-100 shadow-sm border-0 border-start border-4 border-primary">
-            <div class="card-body p-4">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="bg-primary text-white rounded-circle p-3 me-3">
-                        <i class="bi bi-plus-circle-fill fs-3"></i>
-                    </div>
-                    <h5 class="card-title fw-bold mb-0">Módulo de Registro</h5>
-                </div>
-                <p class="card-text text-muted">Da de alta a nuevos alumnos y sus bicicletas asociadas.</p>
-                <a href="{% url 'registrar_bicicleta' %}" class="btn btn-primary fw-bold w-100 mt-2">
-                    ➕ Registrar
-                </a>
-            </div>
-        </div>
-    </div>
-
- 
-    <div class="col-md-4">
-        <div class="card h-100 shadow-sm border-0 border-start border-4 border-success">
-            <div class="card-body p-4">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="bg-success text-white rounded-circle p-3 me-3">
-                        <i class="bi bi-shield-check fs-3"></i>
-                    </div>
-                    
-                    <h5 class="card-title fw-bold mb-0">Control de Accesos</h5>
-                </div>
-                <p class="card-text text-muted">Consulta la validez de los folios o escanea códigos QR.</p>
-                <a href="{% url 'verificar_acceso' %}" class="btn btn-success fw-bold w-100 mt-2">
-                    🔍 Verificar Folio
-                </a>
-            </div>
-        </div>
-    </div>
-
-<div class="col-md-4">
-     <div class="card h-100 shadow-sm border-0 border-start border-4 border-success">
-        <div class="card-body text-center p-4">
-            <div class="mb-3">
-                <span class="bg-secondary text-white p-3 rounded-circle d-inline-block fs-3">📊</span>
-            </div>
-            <h5 class="fw-bold">Historial de Accesos</h5>
-            <p class="text-muted small">Consulta el registro completo de entradas y salidas.</p>
-            <a href="{% url 'historial_accesos' %}" class="btn btn-success fw-bold w-100 mt-2">🔍Ver Historial</a>
-        </div>
-    </div>
-</div>
-
-
-    
-    <div class="col-md-4">
-        <div class="card h-100 shadow-sm border-0 border-start border-4 border-info">
-            <div class="card-body p-4">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="bg-info text-white rounded-circle p-3 me-3">
-                        <i class="bi bi-people-fill fs-3"></i>
-                    </div>
-                    <h5 class="card-title fw-bold mb-0">Usuarios y Roles</h5>
-                </div>
-                <p class="card-text text-muted">Consulta la lista completa de usuarios y sus permisos.</p>
-                <a href="{% url 'lista_usuarios' %}" class="btn btn-info text-white fw-bold w-100 mt-2">
-                    👥 Ver Lista de Usuarios
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-
-v>
-   
+    {% if perms.bicicletas.administrar_bicicletas %}
+        <h1 class="h3 fw-bold mb-3">Bicicletas registradas</h1>
+        <p class="text-muted">Cada bicicleta queda ligada al alumno que eliges al registrarla.</p>
     {% else %}
-
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3 class="fw-bold mb-0">🚲 Mis Bicicletas Registradas</h3>
-        </div>
-
-        {% if bicicletas %}
-            <div class="row row-cols-1 row-cols-md-3 g-4">
-                {% for bicicleta in bicicletas %}
-                    <div class="col">
-                        <div class="card h-100 shadow-sm border-0">
-                            <div class="card-body">
-                                <h5 class="card-title fw-bold">{{ bicicleta.marca }}</h5>
-                                <p class="card-text text-muted">Color: {{ bicicleta.color }}</p>
-                                <span class="badge bg-secondary">Folio: {{ bicicleta.numero_folio }}</span>
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="alert alert-info shadow-sm" role="alert">
-                Aún no tienes bicicletas asociadas a tu cuenta. Acude con un administrador para registrar tu bicicleta.
-            </div>
-        {% endif %}
-
+        <h1 class="h3 fw-bold mb-3">Mis bicicletas</h1>
     {% endif %}
 
+    {% if bicicletas %}
+        <div class="row g-4">
+            {% for bicicleta in bicicletas %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h5 fw-bold">{{ bicicleta.marca }}</h2>
+                            <p class="mb-1">Color: {{ bicicleta.color }}</p>
+                            <p class="mb-1">Folio: {{ bicicleta.numero_folio }}</p>
+                            {% if perms.bicicletas.administrar_bicicletas %}
+                                <p class="mb-3 text-muted">
+                                    {{ bicicleta.usuario.user.get_full_name|default:bicicleta.usuario.user.username }}
+                                    {% if bicicleta.usuario.matricula %} · {{ bicicleta.usuario.matricula }}{% endif %}
+                                </p>
+                            {% endif %}
+                            <div class="d-flex flex-wrap gap-2">
+                                {% if perms.bicicletas.editar_propia_bicicleta or perms.bicicletas.administrar_bicicletas %}
+                                    <a class="btn btn-outline-primary btn-sm" href="{% url 'editar_bicicleta' bicicleta.pk %}">Editar</a>
+                                {% endif %}
+                                {% if perms.bicicletas.ver_codigo_qr or perms.bicicletas.administrar_bicicletas %}
+                                    <a class="btn btn-outline-dark btn-sm" href="{% url 'ver_qr' bicicleta.pk %}">Código QR</a>
+                                {% endif %}
+                            </div>
+                            {% if perms.bicicletas.administrar_bicicletas %}
+                                <form class="mt-3" method="post" action="{% url 'eliminar_bicicleta' bicicleta.pk %}" onsubmit="return confirm('¿Eliminar esta bicicleta?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            {% if perms.bicicletas.administrar_bicicletas %}
+                Todavía no hay bicicletas. Registra una y elige al alumno dueño.
+            {% else %}
+                Aún no tienes bicicletas. Pide al administrador que registre la tuya.
+            {% endif %}
+        </div>
+    {% endif %}
 </div>
 {% endblock %}

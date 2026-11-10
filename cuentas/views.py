@@ -1,63 +1,139 @@
-from django.shortcuts import render, redirect, get_object_or_404
+import secrets
+
+from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth.models import User
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.contrib.auth.models import Group
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import Group, User
+from django.db import transaction
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+
+from cuentas.forms import NuevoUsuarioForm, PerfilForm
+from cuentas.models import PerfilUsuario
+from cuentas.permisos import (
+    ADMINISTRADOR,
+    EDITAR_PERFIL,
+    GESTIONAR_USUARIOS,
+    inicio_para,
+    perfil_de,
+    requiere,
+)
+
 
 def iniciar_sesion(request):
-    if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            user = form.get_user()
-            login(request, user)
-            
-            perfil = getattr(user, 'perfilusuario', None) or getattr(user, 'perfil', None)
-            rol = getattr(perfil, 'rol', '').lower() if perfil else ''
+    if request.user.is_authenticated:
+        return inicio_para(request.user)
 
-            if rol in ['policia', 'guardia']:
-                return redirect('verificar_acceso')
-            elif rol in ['admin', 'administrativo']:
-                return redirect('mis_bicicletas')
-            else:
-                return redirect('mis_bicicletas')
-    else:
-        form = AuthenticationForm()
-        
-    return render(request, 'cuentas/login.html', {'form': form})
+    form = AuthenticationForm(request, data=request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        login(request, form.get_user())
+        return inicio_para(form.get_user())
 
+    return render(request, "cuentas/login.html", {"form": form})
+
+
+@require_POST
 def cerrar_sesion(request):
     logout(request)
-    return redirect('login')
+    return redirect("login")
 
-def registro(request):
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
 
-            # Asignación automática al grupo Alumno
-            grupo_alumno, _ = Group.objects.get_or_create(name='Alumno')
-            user.groups.add(grupo_alumno)
-
-            messages.success(request, 'Usuario registrado con éxito.')
-            return redirect('login')
-    else:
-        form = UserCreationForm()
-
-    return render(request, 'cuentas/registro.html', {'form': form})
-
-@login_required
+@requiere(GESTIONAR_USUARIOS)
 def lista_usuarios(request):
-    perfil = getattr(request.user, 'perfilusuario', None) or getattr(request.user, 'perfil', None)
-    rol = getattr(perfil, 'rol', '').lower() if perfil else ''
-    
-    if rol not in ['admin', 'administrativo']:
-        messages.error(request, 'No tienes permisos para acceder a esta sección.')
-        return redirect('mis_bicicletas')
+    usuarios = list(
+        User.objects.exclude(is_superuser=True)
+        .exclude(groups__name=ADMINISTRADOR)
+        .prefetch_related("groups")
+        .order_by("username")
+    )
+    perfiles = {
+        perfil.user_id: perfil
+        for perfil in PerfilUsuario.objects.filter(user__in=usuarios)
+    }
+    for usuario in usuarios:
+        perfil = perfiles.get(usuario.id)
+        grupos = list(usuario.groups.all())
+        usuario.matricula_perfil = perfil.matricula if perfil and perfil.matricula else "—"
+        usuario.nombre_grupo = grupos[0].name if grupos else "Sin grupo"
+    return render(request, "cuentas/lista_usuarios.html", {"usuarios": usuarios})
 
-    # Obtener usuarios registrados
-    usuarios = User.objects.all().order_by('-date_joined')
-    return render(request, 'cuentas/lista_usuarios.html', {'usuarios': usuarios})
+
+@requiere(GESTIONAR_USUARIOS)
+def nuevo_usuario(request):
+    form = NuevoUsuarioForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        grupo = Group.objects.filter(name=form.cleaned_data["tipo"]).first()
+        if grupo is None:
+            messages.error(request, "El grupo de acceso no está configurado. Aplica las migraciones.")
+            return redirect("nuevo_usuario")
+
+        clave = secrets.token_urlsafe(9)
+        with transaction.atomic():
+            user = form.save(commit=False)
+            user.set_password(clave)
+            user.is_staff = False
+            user.is_superuser = False
+            user.save()
+            PerfilUsuario.objects.create(
+                user=user,
+                matricula=(form.cleaned_data.get("matricula") or "").strip() or None,
+            )
+            user.groups.set([grupo])
+        messages.success(
+            request,
+            f"Cuenta {user.username} creada. Contraseña temporal: {clave}",
+        )
+        return redirect("lista_usuarios")
+
+    return render(request, "cuentas/nuevo_usuario.html", {"form": form})
+
+
+@requiere(GESTIONAR_USUARIOS)
+@require_POST
+def eliminar_usuario(request, pk):
+    objetivo = get_object_or_404(User, pk=pk)
+    if objetivo.pk == request.user.pk or objetivo.is_superuser or objetivo.groups.filter(name=ADMINISTRADOR).exists():
+        messages.error(request, "Esa cuenta no se puede eliminar desde aquí.")
+        return redirect("lista_usuarios")
+
+    nombre = objetivo.username
+    objetivo.delete()
+    messages.success(request, f"Se eliminó la cuenta {nombre}.")
+    return redirect("lista_usuarios")
+
+
+@requiere(EDITAR_PERFIL)
+def editar_perfil(request):
+    perfil = perfil_de(request.user)
+    if perfil is None:
+        perfil = PerfilUsuario.objects.create(user=request.user)
+
+    puede_editar_matricula = request.user.has_perm(GESTIONAR_USUARIOS)
+    form = PerfilForm(
+        request.POST or None,
+        user=request.user,
+        puede_editar_matricula=puede_editar_matricula,
+        initial={
+            "first_name": request.user.first_name,
+            "last_name": request.user.last_name,
+            "email": request.user.email,
+            "matricula": perfil.matricula or "",
+        },
+    )
+    if request.method == "POST" and form.is_valid():
+        request.user.first_name = form.cleaned_data["first_name"]
+        request.user.last_name = form.cleaned_data["last_name"]
+        request.user.email = form.cleaned_data["email"]
+        clave = form.cleaned_data["password1"]
+        if clave:
+            request.user.set_password(clave)
+        request.user.save()
+        if puede_editar_matricula:
+            perfil.matricula = (form.cleaned_data.get("matricula") or "").strip() or None
+            perfil.save()
+        if clave:
+            login(request, request.user)
+        messages.success(request, "Perfil actualizado.")
+        return redirect("editar_perfil")
+
+    return render(request, "cuentas/perfil.html", {"form": form})
