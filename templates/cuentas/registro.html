@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-body p-4 p-md-5">
+                    
+                    <div class="text-center mb-4">
+                        <div class="bg-primary bg-opacity-10 text-primary d-inline-flex p-3 rounded-circle mb-3">
+                            <i class="bi bi-person-plus fs-2"></i>
+                        </div>
+                        <h3 class="fw-bold text-dark mb-1">Registro de Usuario</h3>
+                        <p class="text-muted small">Crea una cuenta para acceder a UniPass</p>
+                    </div>
+
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label fw-semibold text-secondary small">
+                                    {{ field.label }}
+                                </label>
+                                
+                                <input 
+                                    type="{{ field.field.widget.input_type|default:'text' }}"
+                                    name="{{ field.name }}"
+                                    id="{{ field.id_for_label }}"
+                                    class="form-control form-control-lg rounded-3 fs-6 {% if field.errors %}is-invalid{% endif %}"
+                                    {% if field.value %}value="{{ field.value }}"{% endif %}
+                                    required
+                                >
+
+                                {% if field.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ field.errors.0 }}
+                                    </div>
+                                {% endif %}
+
+                                {% if field.help_text %}
+                                    <div class="form-text text-muted small mt-1" style="font-size: 0.75rem;">
+                                        {{ field.help_text|safe }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold rounded-3 mt-3 shadow-sm">
+                            Crear Cuenta
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-4 pt-2 border-top">
+                        <span class="text-muted small">¿Ya tienes cuenta?</span>
+                        <a href="{% url 'login' %}" class="fw-bold text-decoration-none ms-1">Inicia sesión</a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

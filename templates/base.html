@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UniPass - Sistema de Control de Acceso</title>
-    <!-- Bootstrap 5 CSS -->
+   
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
         body {
@@ -19,13 +19,13 @@
             flex: 1;
         }
         .navbar-brand span {
-            color: #ffc107;
+            color: #cd1616fc;
         }
     </style>
 </head>
 <body>
 
-    <!-- NAVBAR GLOBAL UNIPASS -->
+
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
         <div class="container">
             <a class="navbar-brand fw-bold fs-4 d-flex align-items-center" href="#">
@@ -40,25 +40,14 @@
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     {% if user.is_authenticated %}
                         
-                        <!-- ROL: ADMINISTRATIVO / SISTEMAS / STAFF -->
+                       
                         {% if user.is_staff or user.perfil.rol == 'admin' %}
                             <li class="nav-item">
 
                                     <i class="bi bi-house-door-fill"></i> Menú Principal
                                 </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'registrar_bicicleta' %}">
-                                    <i class="bi bi-plus-circle-fill"></i> Registrar Bicicleta
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'verificar_acceso' %}">
-                                    <i class="bi bi-shield-check"></i> Control de Acceso
-                                </a>
-                            </li>
 
-                        <!-- ROL: POLICÍA / SEGURIDAD -->
+                       
                         {% elif user.perfil.rol == 'policia' %}
                             <li class="nav-item">
                                 <a class="nav-link fw-bold text-warning" href="{% url 'verificar_acceso' %}">
@@ -66,7 +55,9 @@
                                 </a>
                             </li>
 
-                        <!-- ROL: ALUMNO / USUARIO GENERAL -->
+                            
+
+
                         {% else %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'mis_bicicletas' %}">
@@ -78,7 +69,11 @@
                     {% endif %}
                 </ul>
 
-                <!-- SECCIÓN DERECHA: USUARIO / SESIÓN -->
+
+                
+
+
+                
                 <div class="d-flex align-items-center text-white">
                     {% if user.is_authenticated %}
                         <span class="me-3 small">
@@ -101,24 +96,22 @@
         </div>
     </nav>
 
-    <!-- CONTENIDO DINÁMICO DE CADA VISTA -->
     <main class="content-wrapper">
         {% block content %}
-        <!-- Aquí se inyecta el HTML de verificar.html, mis_bicicletas.html, etc. -->
+  
         {% endblock %}
     </main>
 
-    <!-- FOOTER -->
+    
+  
     <footer class="bg-white border-top py-3 text-center text-muted small mt-5">
         <div class="container">
-            <p class="mb-0">© 2026 UniPass • Universidad Tecnológica del Valle de Mexico (UTVAM)</p>
+            <p class="mb-0">© 2026 UniPass • Universidad Tecnológica de la Zona Metropolitana del Valle de Mexico (UTVAM)</p>
         </div>
     </footer>
 
-    <!-- Bootstrap 5 JavaScript Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <a href="{% url 'logout' %}" class="btn btn-outline-light">
-    🚪 Salir
+  
+   
 </a>
 </body>
 </html>
