@@ -4,6 +4,8 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.contrib.auth.models import Group
+from django.contrib.auth.forms import UserCreationForm
 
 def iniciar_sesion(request):
     if request.method == 'POST':
@@ -30,12 +32,28 @@ def cerrar_sesion(request):
     logout(request)
     return redirect('login')
 
+def registro(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+
+            # Asignación automática al grupo Alumno
+            grupo_alumno, _ = Group.objects.get_or_create(name='Alumno')
+            user.groups.add(grupo_alumno)
+
+            messages.success(request, 'Usuario registrado con éxito.')
+            return redirect('login')
+    else:
+        form = UserCreationForm()
+
+    return render(request, 'cuentas/registro.html', {'form': form})
+
 @login_required
 def lista_usuarios(request):
     perfil = getattr(request.user, 'perfilusuario', None) or getattr(request.user, 'perfil', None)
     rol = getattr(perfil, 'rol', '').lower() if perfil else ''
     
-    # Restricción de acceso solo para administradores (Mitigación OWASP A01)
     if rol not in ['admin', 'administrativo']:
         messages.error(request, 'No tienes permisos para acceder a esta sección.')
         return redirect('mis_bicicletas')

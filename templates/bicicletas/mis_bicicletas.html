@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container py-4">
 
-    <!-- Si el usuario es Administrador / Administrativo -->
+   
     {% if request.user.perfilusuario.rol == 'admin' or request.user.perfilusuario.rol == 'administrativo' or request.user.perfil.rol == 'admin' or request.user.perfil.rol == 'administrativo' %}
         
         <div class="p-5 mb-4 bg-light rounded-3 border shadow-sm">
@@ -17,7 +17,7 @@
 
         <h4 class="fw-bold mb-3">Acciones Rápidas</h4>
 <div class="row g-4">
-    <!-- Tarjeta 1: Registro -->
+    
     <div class="col-md-4">
         <div class="card h-100 shadow-sm border-0 border-start border-4 border-primary">
             <div class="card-body p-4">
@@ -35,7 +35,7 @@
         </div>
     </div>
 
-    <!-- Tarjeta 2: Control de Accesos -->
+ 
     <div class="col-md-4">
         <div class="card h-100 shadow-sm border-0 border-start border-4 border-success">
             <div class="card-body p-4">
@@ -43,6 +43,7 @@
                     <div class="bg-success text-white rounded-circle p-3 me-3">
                         <i class="bi bi-shield-check fs-3"></i>
                     </div>
+                    
                     <h5 class="card-title fw-bold mb-0">Control de Accesos</h5>
                 </div>
                 <p class="card-text text-muted">Consulta la validez de los folios o escanea códigos QR.</p>
@@ -53,7 +54,21 @@
         </div>
     </div>
 
-    <!-- Tarjeta 3: Gestión de Usuarios (NUEVO BOTÓN) -->
+<div class="col-md-4">
+     <div class="card h-100 shadow-sm border-0 border-start border-4 border-success">
+        <div class="card-body text-center p-4">
+            <div class="mb-3">
+                <span class="bg-secondary text-white p-3 rounded-circle d-inline-block fs-3">📊</span>
+            </div>
+            <h5 class="fw-bold">Historial de Accesos</h5>
+            <p class="text-muted small">Consulta el registro completo de entradas y salidas.</p>
+            <a href="{% url 'historial_accesos' %}" class="btn btn-success fw-bold w-100 mt-2">🔍Ver Historial</a>
+        </div>
+    </div>
+</div>
+
+
+    
     <div class="col-md-4">
         <div class="card h-100 shadow-sm border-0 border-start border-4 border-info">
             <div class="card-body p-4">
@@ -72,26 +87,8 @@
     </div>
 </div>
 
-            <!-- Tarjeta 2: Control de Accesos -->
-            <div class="col-md-6">
-                <div class="card h-100 shadow-sm border-0 border-start border-4 border-success">
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="bg-success text-white rounded-circle p-3 me-3">
-                                <i class="bi bi-shield-check fs-3"></i>
-                            </div>
-                            <h5 class="card-title fw-bold mb-0">Verificación de Accesos</h5>
-                        </div>
-                        <p class="card-text text-muted">Consulta la validez de los folios o escanea códigos QR de las bicicletas en la entrada.</p>
-                        <a href="{% url 'verificar_acceso' %}" class="btn btn-success fw-bold w-100 mt-2">
-                            🔍 Consultar / Escanear Folio
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    <!-- Si el usuario es Alumno (Vista normal de sus bicicletas) -->
+v>
+   
     {% else %}
 
         <div class="d-flex justify-content-between align-items-center mb-4">
