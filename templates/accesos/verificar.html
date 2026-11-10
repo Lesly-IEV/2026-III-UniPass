@@ -1,73 +1,51 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
+{% block title %}Escanear acceso · UniPass{% endblock %}
 
 {% block content %}
 <div class="container py-4">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            
-            <!-- Buscador -->
-            <div class="card shadow-sm border-0 mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body p-4 text-center">
-                    <h3 class="fw-bold mb-3">🛡️ Control de Acceso UniPass</h3>
-                    <p class="text-muted">Escanea el código QR o ingresa la matrícula/folio de la bicicleta.</p>
-
-                    <form method="POST" class="d-flex gap-2 justify-content-center my-3">
+                    <h1 class="h3 fw-bold mb-2">Control de acceso</h1>
+                    <p class="text-muted">Escanea el código QR de la bicicleta.</p>
+                    <form method="post" class="d-flex gap-2 justify-content-center">
                         {% csrf_token %}
-                        <input type="text" name="codigo" class="form-control form-control-lg w-75 text-center"
-                               placeholder="Escaneo QR o Folio (ej. 172)" value="{{ query }}" autofocus required>
-                        <button type="submit" class="btn btn-primary btn-lg px-4 fw-bold">Buscar</button>
+                        <input type="text" name="codigo" class="form-control form-control-lg w-75 text-center" placeholder="Código QR" value="{{ query }}" autofocus required>
+                        <button type="submit" class="btn btn-primary btn-lg">Buscar</button>
                     </form>
                 </div>
             </div>
 
-            <!-- Resultados -->
             {% if bicicleta %}
-                <div class="card shadow border-0 border-start border-5 border-success mb-4">
-                    <div class="card-header bg-success text-white fw-bold py-3">
-                        ✅ Registro Encontrado — Folio #{{ bicicleta.numero_folio }}
-                    </div>
+                <div class="card border-0 shadow-sm border-start border-5 border-success">
                     <div class="card-body p-4">
                         <div class="row">
-                            <!-- Datos del Alumno / Propietario -->
-                            <div class="col-md-6 border-end">
-                                <h5 class="fw-bold text-primary mb-3">👤 Propietario</h5>
-                                <p class="mb-2"><strong>Nombre:</strong> {{ bicicleta.usuario.user.get_full_name|default:bicicleta.usuario.user.username }}</p>
-                                <p class="mb-2"><strong>Matrícula:</strong> {{ bicicleta.usuario.matricula|default:"Sin asignar" }}</p>
-                                <p class="mb-2"><strong>Correo:</strong> {{ bicicleta.usuario.user.email|default:"Sin correo" }}</p>
-                                <p class="mb-0"><strong>Rol:</strong> <span class="badge bg-info text-dark">{{ bicicleta.usuario.rol|upper }}</span></p>
+                            <div class="col-md-6">
+                                <h2 class="h5">Alumno</h2>
+                                <p class="mb-1"><strong>Nombre:</strong> {{ bicicleta.usuario.user.get_full_name|default:bicicleta.usuario.user.username }}</p>
+                                <p class="mb-0"><strong>Matrícula:</strong> {{ bicicleta.usuario.matricula|default:"Sin asignar" }}</p>
                             </div>
-
-                            <!-- Datos de la Bicicleta -->
                             <div class="col-md-6 mt-3 mt-md-0">
-                                <h5 class="fw-bold text-success mb-3">🚲 Bicicleta</h5>
-                                <p class="mb-2"><strong>Folio:</strong> #{{ bicicleta.numero_folio }}</p>
-                                <p class="mb-2"><strong>Marca:</strong> {{ bicicleta.marca }}</p>
-                                <p class="mb-2"><strong>Color:</strong> {{ bicicleta.color }}</p>
+                                <h2 class="h5">Bicicleta</h2>
+                                <p class="mb-1"><strong>Folio:</strong> {{ bicicleta.numero_folio }}</p>
+                                <p class="mb-1"><strong>Marca:</strong> {{ bicicleta.marca }}</p>
+                                <p class="mb-0"><strong>Color:</strong> {{ bicicleta.color }}</p>
                             </div>
                         </div>
                     </div>
-                    <div class="card-footer bg-light d-flex justify-content-between align-items-center p-3">
-    <span class="text-muted small">Estado: Registrado en sistema</span>
-    
-    <form method="POST" class="d-flex gap-2">
-        {% csrf_token %}
-        <input type="hidden" name="bicicleta_id" value="{{ bicicleta.id }}">
-        <input type="hidden" name="codigo" value="{{ query }}">
-        
-        <button type="submit" name="action" value="registrar_entrada" class="btn btn-success fw-bold">
-            📥 Entrada
-        </button>
-        <button type="submit" name="action" value="registrar_salida" class="btn btn-danger fw-bold">
-            📤 Salida
-        </button>
-    </form>
-</div>
+                    <div class="card-footer bg-light p-3">
+                        <form method="post" class="d-flex gap-2 justify-content-end">
+                            {% csrf_token %}
+                            <input type="hidden" name="qr_token" value="{{ bicicleta.qr_token }}">
+                            <button type="submit" name="action" value="registrar_entrada" class="btn btn-success">Entrada</button>
+                            <button type="submit" name="action" value="registrar_salida" class="btn btn-danger">Salida</button>
+                        </form>
                     </div>
                 </div>
             {% endif %}
-
         </div>
     </div>
 </div>
-
-{% endblock %} 
+{% endblock %}

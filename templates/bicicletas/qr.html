@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Código QR · UniPass{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 520px;">
+    <a href="{% url 'mis_bicicletas' %}" class="btn btn-outline-secondary mb-3">Volver</a>
+    <div class="card border-0 shadow-sm text-center">
+        <div class="card-body p-4">
+            <h1 class="h4 fw-bold">{{ bicicleta.marca }}</h1>
+            <p class="text-muted mb-1">Folio {{ bicicleta.numero_folio }} · {{ bicicleta.color }}</p>
+            {% if perms.bicicletas.administrar_bicicletas %}
+                <p class="text-muted">{{ bicicleta.usuario.user.get_full_name|default:bicicleta.usuario.user.username }}</p>
+            {% endif %}
+            <div id="codigo-qr" class="d-flex justify-content-center my-4"></div>
+            <p class="small text-muted mb-0">El guardia escanea este código. No lo compartas.</p>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+    new QRCode(document.getElementById("codigo-qr"), {
+        text: "{{ bicicleta.qr_token }}",
+        width: 220,
+        height: 220,
+    });
+</script>
+{% endblock %}

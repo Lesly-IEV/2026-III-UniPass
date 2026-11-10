@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UniPass - Sistema de Control de Acceso</title>
-   
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
+    <title>{% block title %}UniPass{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
         body {
@@ -15,81 +13,66 @@
             display: flex;
             flex-direction: column;
         }
-        .content-wrapper {
-            flex: 1;
-        }
-        .navbar-brand span {
-            color: #cd1616fc;
-        }
+        .content-wrapper { flex: 1; }
+        .navbar-brand span { color: #cd1616fc; }
     </style>
 </head>
 <body>
-
-
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
         <div class="container">
-            <a class="navbar-brand fw-bold fs-4 d-flex align-items-center" href="#">
-                🚴‍♂️ <span class="ms-2 text-white">Uni</span><span>Pass</span>
+            <a class="navbar-brand fw-bold fs-4" href="{% url 'login' %}">
+                Uni<span>Pass</span>
             </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Abrir menú">
                 <span class="navbar-toggler-icon"></span>
             </button>
-
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     {% if user.is_authenticated %}
-                        
-                       
-                        {% if user.is_staff or user.perfil.rol == 'admin' %}
+                        {% if perms.cuentas.gestionar_usuarios %}
                             <li class="nav-item">
-
-                                    <i class="bi bi-house-door-fill"></i> Menú Principal
-                                </a>
-
-                       
-                        {% elif user.perfil.rol == 'policia' %}
-                            <li class="nav-item">
-                                <a class="nav-link fw-bold text-warning" href="{% url 'verificar_acceso' %}">
-                                    <i class="bi bi-shield-lock-fill"></i> Control de Acceso
-                                </a>
+                                <a class="nav-link" href="{% url 'mis_bicicletas' %}">Inicio</a>
                             </li>
-
-                            
-
-
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'lista_usuarios' %}">Alumnos y guardias</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'registrar_bicicleta' %}">Registrar bicicleta</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'verificar_acceso' %}">Escanear</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'historial_accesos' %}">Historial</a>
+                            </li>
+                        {% elif perms.accesos.escanear_acceso %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'verificar_acceso' %}">Escanear QR</a>
+                            </li>
                         {% else %}
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'mis_bicicletas' %}">
-                                    <i class="bi bi-journal-bookmark-fill"></i> Mis Bicicletas
-                                </a>
+                                <a class="nav-link" href="{% url 'mis_bicicletas' %}">Mis bicicletas</a>
                             </li>
                         {% endif %}
-
+                        {% if perms.cuentas.editar_propio_perfil %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'editar_perfil' %}">Mi perfil</a>
+                            </li>
+                        {% endif %}
                     {% endif %}
                 </ul>
-
-
-                
-
-
-                
                 <div class="d-flex align-items-center text-white">
                     {% if user.is_authenticated %}
                         <span class="me-3 small">
-                            <i class="bi bi-person-circle fs-5 align-middle me-1"></i>
-                            <strong>{{ user.username }}</strong> 
-                            <span class="badge bg-secondary ms-1">
-                                {{ user.perfil.get_rol_display|default:"Alumno" }}
-                            </span>
+                            <strong>{{ user.get_full_name|default:user.username }}</strong>
+                            <span class="badge bg-secondary ms-1">{{ etiqueta }}</span>
                         </span>
-                        <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">
-                            <i class="bi bi-box-arrow-right"></i> Salir
-                        </a>
+                        <form method="post" action="{% url 'logout' %}" class="m-0">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-light btn-sm">Salir</button>
+                        </form>
                     {% else %}
-                        <a href="{% url 'login' %}" class="btn btn-primary btn-sm">
-                            <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
-                        </a>
+                        <a href="{% url 'login' %}" class="btn btn-primary btn-sm">Iniciar sesión</a>
                     {% endif %}
                 </div>
             </div>
@@ -97,21 +80,24 @@
     </nav>
 
     <main class="content-wrapper">
-        {% block content %}
-  
-        {% endblock %}
+        {% if messages %}
+            <div class="container pt-3">
+                {% for message in messages %}
+                    <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% block content %}{% endblock %}
     </main>
 
-    
-  
     <footer class="bg-white border-top py-3 text-center text-muted small mt-5">
         <div class="container">
-            <p class="mb-0">© 2026 UniPass • Universidad Tecnológica de la Zona Metropolitana del Valle de Mexico (UTVAM)</p>
+            <p class="mb-0">© 2026 UniPass • Universidad Tecnológica de la Zona Metropolitana del Valle de México (UTVAM)</p>
         </div>
     </footer>
-
-  
-   
-</a>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

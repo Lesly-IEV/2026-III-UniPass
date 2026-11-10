@@ -10,22 +10,29 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+_env = BASE_DIR / ".env"
+if _env.exists():
+    for _linea in _env.read_text(encoding="utf-8").splitlines():
+        _linea = _linea.strip()
+        if not _linea or _linea.startswith("#") or "=" not in _linea:
+            continue
+        _clave, _valor = _linea.split("=", 1)
+        os.environ.setdefault(_clave.strip(), _valor.strip().strip('"').strip("'"))
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-o6weri+h*oc9%kdcq8&ji5t#qfmp@hcid13muxui^xghpk12e%'
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-change-me")
+DEBUG = os.environ.get("DJANGO_DEBUG", "0") == "1"
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
 
 # Application definition
@@ -66,6 +73,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'cuentas.context_processors.perfil_usuario',
             ],
         },
     },
@@ -125,8 +133,6 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-LOGIN_REDIRECT_URL = '/cuentas/'
-LOGIN_REDIRECT_URL = '/bicicletas/mis-bicicletas/'
-LOGOUT_REDIRECT_URL = '/login/'
-
-LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = "/bicicletas/mis-bicicletas/"
+LOGOUT_REDIRECT_URL = "/login/"
+LOGIN_URL = "login"
