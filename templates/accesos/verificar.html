@@ -4,73 +4,70 @@
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-md-8">
+            
+            <!-- Buscador -->
             <div class="card shadow-sm border-0 mb-4">
                 <div class="card-body p-4 text-center">
                     <h3 class="fw-bold mb-3">🛡️ Control de Acceso UniPass</h3>
                     <p class="text-muted">Escanea el código QR o ingresa la matrícula/folio de la bicicleta.</p>
-                    
-                    <!-- Formulario de Búsqueda / Escáner -->
+
                     <form method="POST" class="d-flex gap-2 justify-content-center my-3">
                         {% csrf_token %}
-                        <input type="text" name="codigo" class="form-control form-control-lg w-75 text-center" 
-                               placeholder="Escaneo QR o Folio (ej. BIC-1234)" autofocus required>
-                        <button type="submit" class="btn btn-primary btn-lg px-4">Buscar</button>
+                        <input type="text" name="codigo" class="form-control form-control-lg w-75 text-center"
+                               placeholder="Escaneo QR o Folio (ej. 172)" value="{{ query }}" autofocus required>
+                        <button type="submit" class="btn btn-primary btn-lg px-4 fw-bold">Buscar</button>
                     </form>
-
-                    {% if mensaje %}
-                        <div class="alert alert-info mt-3 text-center" role="alert">
-                            {{ mensaje }}
-                        </div>
-                    {% endif %}
                 </div>
             </div>
 
-            <!-- Resultado de la Búsqueda -->
+            <!-- Resultados -->
             {% if bicicleta %}
-            <div class="card shadow border-0">
-                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center p-3">
-                    <h5 class="mb-0">Datos del Alumno y Bicicleta</h5>
-                    <span class="badge bg-secondary fs-6">{{ bicicleta.matricula }}</span>
-                </div>
-                <div class="card-body p-4">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h4 class="fw-bold text-primary">{{ bicicleta.usuario.user.get_full_name|default:bicicleta.usuario.user.username }}</h4>
-                            <p class="mb-1"><strong>Matrícula Alumno:</strong> {{ bicicleta.usuario.matricula|default:"Sin matrícula" }}</p>
-                            <p class="mb-1"><strong>Marca / Modelo:</strong> {{ bicicleta.marca }} - {{ bicicleta.modelo }}</p>
-                            <p class="mb-1"><strong>Color:</strong> {{ bicicleta.color }}</p>
-                            <p class="mb-0"><strong>Número de Serie:</strong> {{ bicicleta.num_serie|default:"N/A" }}</p>
-                        </div>
-                        
-                        <div class="col-md-4 text-center border-start py-2">
-                            <p class="text-muted mb-1">Estado Actual</p>
-                            {% if ultimo_registro and ultimo_registro.tipo_movimiento == 'ENTRADA' %}
-                                <span class="badge bg-success p-2 fs-6 mb-3">DENTRO DEL PLANTEL</span>
-                                <p class="small text-muted mb-3">Ingreso: {{ ultimo_registro.fecha_hora|date:"d/m/Y H:i" }}</p>
-                                
-                                <form method="POST">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="codigo" value="{{ bicicleta.token_qr }}">
-                                    <input type="hidden" name="accion" value="SALIDA">
-                                    <button type="submit" class="btn btn-danger btn-lg w-100">Registrar SALIDA 🔴</button>
-                                </form>
-                            {% else %}
-                                <span class="badge bg-secondary p-2 fs-6 mb-3">FUERA DEL PLANTEL</span>
-                                <p class="small text-muted mb-3">Último registro: {{ ultimo_registro.fecha_hora|date:"d/m/Y H:i"|default:"Sin registros" }}</p>
-                                
-                                <form method="POST">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="codigo" value="{{ bicicleta.token_qr }}">
-                                    <input type="hidden" name="accion" value="ENTRADA">
-                                    <button type="submit" class="btn btn-success btn-lg w-100">Registrar ENTRADA 🟢</button>
-                                </form>
-                            {% endif %}
+                <div class="card shadow border-0 border-start border-5 border-success mb-4">
+                    <div class="card-header bg-success text-white fw-bold py-3">
+                        ✅ Registro Encontrado — Folio #{{ bicicleta.numero_folio }}
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row">
+                            <!-- Datos del Alumno / Propietario -->
+                            <div class="col-md-6 border-end">
+                                <h5 class="fw-bold text-primary mb-3">👤 Propietario</h5>
+                                <p class="mb-2"><strong>Nombre:</strong> {{ bicicleta.usuario.user.get_full_name|default:bicicleta.usuario.user.username }}</p>
+                                <p class="mb-2"><strong>Matrícula:</strong> {{ bicicleta.usuario.matricula|default:"Sin asignar" }}</p>
+                                <p class="mb-2"><strong>Correo:</strong> {{ bicicleta.usuario.user.email|default:"Sin correo" }}</p>
+                                <p class="mb-0"><strong>Rol:</strong> <span class="badge bg-info text-dark">{{ bicicleta.usuario.rol|upper }}</span></p>
+                            </div>
+
+                            <!-- Datos de la Bicicleta -->
+                            <div class="col-md-6 mt-3 mt-md-0">
+                                <h5 class="fw-bold text-success mb-3">🚲 Bicicleta</h5>
+                                <p class="mb-2"><strong>Folio:</strong> #{{ bicicleta.numero_folio }}</p>
+                                <p class="mb-2"><strong>Marca:</strong> {{ bicicleta.marca }}</p>
+                                <p class="mb-2"><strong>Color:</strong> {{ bicicleta.color }}</p>
+                            </div>
                         </div>
                     </div>
+                    <div class="card-footer bg-light d-flex justify-content-between align-items-center p-3">
+    <span class="text-muted small">Estado: Registrado en sistema</span>
+    
+    <form method="POST" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="bicicleta_id" value="{{ bicicleta.id }}">
+        <input type="hidden" name="codigo" value="{{ query }}">
+        
+        <button type="submit" name="action" value="registrar_entrada" class="btn btn-success fw-bold">
+            📥 Entrada
+        </button>
+        <button type="submit" name="action" value="registrar_salida" class="btn btn-danger fw-bold">
+            📤 Salida
+        </button>
+    </form>
+</div>
+                    </div>
                 </div>
-            </div>
             {% endif %}
+
         </div>
     </div>
 </div>
-{% endblock %}
+
+{% endblock %} 
