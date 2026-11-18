@@ -12,6 +12,7 @@ from cuentas.permisos import (
     bicicletas_de,
     requiere,
     requiere_alguno,
+    respuesta_si_solo_lectura,
 )
 
 from .forms import BicicletaForm, CaracteristicasBicicletaForm
@@ -32,6 +33,10 @@ def mis_bicicletas(request):
 
 @requiere(ADMINISTRAR_BICICLETAS)
 def registrar_bicicleta(request):
+    if request.method == "POST":
+        bloqueo = respuesta_si_solo_lectura(request)
+        if bloqueo:
+            return bloqueo
     form = BicicletaForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         bicicleta = form.save(commit=False)
@@ -45,6 +50,10 @@ def registrar_bicicleta(request):
 
 @requiere_alguno(ADMINISTRAR_BICICLETAS, EDITAR_BICICLETA)
 def editar_bicicleta(request, pk):
+    if request.method == "POST":
+        bloqueo = respuesta_si_solo_lectura(request)
+        if bloqueo:
+            return bloqueo
     bicicleta = get_object_or_404(bicicletas_de(request.user), pk=pk)
     form = CaracteristicasBicicletaForm(
         request.POST or None,
@@ -72,6 +81,9 @@ def ver_qr(request, pk):
 @requiere(ADMINISTRAR_BICICLETAS)
 @require_POST
 def eliminar_bicicleta(request, pk):
+    bloqueo = respuesta_si_solo_lectura(request)
+    if bloqueo:
+        return bloqueo
     bicicleta = get_object_or_404(Bicicleta, pk=pk)
     folio = bicicleta.numero_folio
     bicicleta.delete()

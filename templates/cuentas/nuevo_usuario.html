@@ -12,7 +12,11 @@
             <form method="post">
                 {% csrf_token %}
                 {{ form.as_p }}
+                {% if solo_lectura %}
+                <p class="text-muted mb-0">Tu perfil está en solo lectura. No puedes crear cuentas.</p>
+                {% else %}
                 <button type="submit" class="btn btn-primary">Crear cuenta</button>
+                {% endif %}
             </form>
         </div>
     </div>

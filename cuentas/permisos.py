@@ -87,6 +87,24 @@ def perfil_de(user):
     return PerfilUsuario.objects.filter(user=user).first()
 
 
+def es_solo_lectura(user):
+    """El modo no sustituye al permiso. El superusuario nunca queda en solo lectura."""
+    if not _sesion_valida(user) or getattr(user, "is_superuser", False):
+        return False
+    from cuentas.models import PerfilUsuario
+
+    perfil = perfil_de(user)
+    return perfil is not None and perfil.modo_acceso == PerfilUsuario.MODO_LECTURA
+
+
+def respuesta_si_solo_lectura(request):
+    """Conserva la sesión y niega la escritura. Leer sigue permitido por el permiso."""
+    if not es_solo_lectura(getattr(request, "user", None)):
+        return None
+    messages.error(request, "Tu perfil está en solo lectura. No puedes modificar datos.")
+    return inicio_para(request.user)
+
+
 def bicicletas_de(user):
     """Quien administra ve todas. El alumno solo las suyas. El resto, ninguna."""
     from bicicletas.models import Bicicleta

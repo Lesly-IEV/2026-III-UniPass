@@ -199,3 +199,75 @@ class CaracteresEspecialesTests(TestCase):
         )
         self.assertFalse(edicion.is_valid())
         self.assertIn("marca", edicion.errors)
+
+
+class PerfilesClienteYLecturaTests(TestCase):
+    def setUp(self):
+        sincronizar_grupos()
+        self.alumno = User.objects.create_user("alumno-modo", password="clave-segura-1")
+        self.alumno.groups.add(Group.objects.get(name=ALUMNO))
+        self.perfil = PerfilUsuario.objects.create(user=self.alumno, matricula="B010")
+        self.bici = Bicicleta.objects.create(
+            usuario=self.perfil,
+            numero_folio="F-MODO",
+            marca="Benotto",
+            color="Roja",
+        )
+        self.guardia = User.objects.create_user("guardia-modo", password="clave-segura-1")
+        self.guardia.groups.add(Group.objects.get(name=GUARDIA))
+        PerfilUsuario.objects.create(user=self.guardia)
+        self.admin = User.objects.create_user("admin-modo", password="clave-segura-1")
+        self.admin.groups.add(Group.objects.get(name=ADMINISTRADOR))
+        PerfilUsuario.objects.create(user=self.admin)
+        self.superuser = User.objects.create_superuser("root-modo", "root@utvam.edu.mx", "clave-segura-1")
+
+    def test_el_login_publico_no_muestra_perfiles(self):
+        pagina = self.client.get(reverse("login"))
+        self.assertNotContains(pagina, "Perfiles de acceso")
+        self.assertNotContains(pagina, "alumno-modo")
+
+    def test_solo_el_superusuario_ve_y_asigna_perfiles(self):
+        self.client.force_login(self.admin)
+        self.assertRedirects(self.client.get(reverse("login")), reverse("mis_bicicletas"))
+        self.client.post(reverse("asignar_perfiles"), {f"modo_{self.alumno.pk}": "lectura"})
+        self.perfil.refresh_from_db()
+        self.assertEqual(self.perfil.modo_acceso, PerfilUsuario.MODO_CLIENTE)
+
+        self.client.force_login(self.superuser)
+        pagina = self.client.get(reverse("login"))
+        self.assertContains(pagina, "Perfiles de acceso")
+        self.assertContains(pagina, "alumno-modo")
+        self.client.post(reverse("asignar_perfiles"), {f"modo_{self.alumno.pk}": "lectura"})
+        self.perfil.refresh_from_db()
+        self.assertEqual(self.perfil.modo_acceso, PerfilUsuario.MODO_LECTURA)
+
+    def test_solo_lectura_no_edita_y_el_cliente_sigue_pudiendo(self):
+        self.perfil.modo_acceso = PerfilUsuario.MODO_LECTURA
+        self.perfil.save()
+        self.client.force_login(self.alumno)
+        self.client.post(
+            reverse("editar_bicicleta", args=[self.bici.pk]),
+            {"marca": "Otra", "color": "Azul"},
+        )
+        self.bici.refresh_from_db()
+        self.assertEqual(self.bici.marca, "Benotto")
+
+        self.perfil.modo_acceso = PerfilUsuario.MODO_CLIENTE
+        self.perfil.save()
+        self.client.post(
+            reverse("editar_bicicleta", args=[self.bici.pk]),
+            {"marca": "Benotto", "color": "Azul"},
+        )
+        self.bici.refresh_from_db()
+        self.assertEqual(self.bici.color, "Azul")
+
+    def test_solo_lectura_no_registra_entradas(self):
+        perfil = self.guardia.perfil
+        perfil.modo_acceso = PerfilUsuario.MODO_LECTURA
+        perfil.save()
+        self.client.force_login(self.guardia)
+        self.client.post(
+            reverse("verificar_acceso"),
+            {"action": "registrar_entrada", "qr_token": str(self.bici.qr_token)},
+        )
+        self.assertEqual(self.bici.accesos.count(), 0)

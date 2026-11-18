@@ -9,7 +9,7 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from bicicletas.models import Bicicleta
-from cuentas.permisos import ESCANEAR, VER_HISTORIAL, requiere
+from cuentas.permisos import ESCANEAR, VER_HISTORIAL, requiere, respuesta_si_solo_lectura
 
 from .models import RegistroAcceso
 
@@ -74,6 +74,9 @@ def verificar_acceso(request):
     if request.method == "POST":
         accion = request.POST.get("action") or ""
         if accion in ("registrar_entrada", "registrar_salida"):
+            bloqueo = respuesta_si_solo_lectura(request)
+            if bloqueo:
+                return bloqueo
             bicicleta = _buscar_qr(request.POST.get("qr_token"))
             if bicicleta is None:
                 messages.error(request, "El código QR no corresponde a una bicicleta registrada.")
