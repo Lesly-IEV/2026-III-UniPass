@@ -61,6 +61,7 @@
                             </div>
                         </div>
                     </div>
+                    {% if not solo_lectura %}
                     <div class="card-footer bg-light p-3">
                         <form method="post" class="d-flex gap-2 justify-content-end">
                             {% csrf_token %}
@@ -69,6 +70,9 @@
                             <button type="submit" name="action" value="registrar_salida" class="btn btn-danger">Salida</button>
                         </form>
                     </div>
+                    {% else %}
+                    <div class="card-footer bg-light p-3 text-muted">Solo lectura: puedes consultar la bicicleta, no registrar entrada ni salida.</div>
+                    {% endif %}
                 </div>
             {% endif %}
         </div>

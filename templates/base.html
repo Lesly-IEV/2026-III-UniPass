@@ -83,6 +83,11 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     {% if user.is_authenticated %}
+                        {% if user.is_superuser %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'login' %}">Perfiles</a>
+                            </li>
+                        {% endif %}
                         {% if perms.cuentas.gestionar_usuarios %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'mis_bicicletas' %}">Inicio</a>
@@ -90,9 +95,11 @@
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'lista_usuarios' %}">Alumnos y guardias</a>
                             </li>
+                            {% if not solo_lectura %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'registrar_bicicleta' %}">Registrar bicicleta</a>
                             </li>
+                            {% endif %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'verificar_acceso' %}">Escanear</a>
                             </li>

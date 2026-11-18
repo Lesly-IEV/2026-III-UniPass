@@ -3,8 +3,20 @@ from django.db import models
 
 
 class PerfilUsuario(models.Model):
+    MODO_CLIENTE = "cliente"
+    MODO_LECTURA = "lectura"
+    MODOS = [
+        (MODO_CLIENTE, "Cliente"),
+        (MODO_LECTURA, "Solo lectura"),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="perfil")
     matricula = models.CharField(max_length=20, blank=True, null=True)
+    modo_acceso = models.CharField(
+        max_length=20,
+        choices=MODOS,
+        default=MODO_CLIENTE,
+    )
 
     class Meta:
         permissions = [

@@ -6,7 +6,9 @@
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 fw-bold mb-0">Alumnos y guardias</h1>
+        {% if not solo_lectura %}
         <a href="{% url 'nuevo_usuario' %}" class="btn btn-primary">Registrar cuenta</a>
+        {% endif %}
     </div>
     <div class="card border-0 shadow-sm">
         <div class="table-responsive">
@@ -30,6 +32,7 @@
                             <td>{{ usuario.matricula_perfil }}</td>
                             <td><span class="badge bg-secondary">{{ usuario.nombre_grupo }}</span></td>
                            <td class="text-end">
+                        {% if not solo_lectura %}
                         <form method="post" action="{% url 'restablecer_clave_usuario' usuario.pk %}" class="d-inline" onsubmit="return confirm('¿Restablecer la contraseña de {{ usuario.username }} a UniPass2026!?');">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-outline-secondary btn-sm me-1">Restablecer clave</button>
@@ -38,6 +41,7 @@
                             {% csrf_token %}
                             <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar</button>
                         </form>
+                        {% endif %}
                     </td>
                         </tr>
                     {% empty %}

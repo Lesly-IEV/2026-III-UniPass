@@ -4,7 +4,8 @@
 
 {% block content %}
 <div class="container py-5">
-    <div class="row justify-content-center">
+    <div class="row justify-content-center g-4">
+        {% if not user.is_authenticated %}
         <div class="col-md-5">
             <div class="card shadow border-0">
                 <div class="card-body p-4">
@@ -27,6 +28,55 @@
                 </div>
             </div>
         </div>
+        {% endif %}
+        {% if user.is_superuser %}
+        <div class="col-lg-8">
+            <div class="card shadow border-0">
+                <div class="card-body p-4">
+                    <h1 class="h4 mb-1">Perfiles de acceso</h1>
+                    <p class="text-muted">Elige quién entra como cliente y quién queda en solo lectura. Los grupos y permisos no cambian.</p>
+                    <form method="post" action="{% url 'asignar_perfiles' %}">
+                        {% csrf_token %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-3">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Usuario</th>
+                                        <th>Nombre</th>
+                                        <th>Grupo</th>
+                                        <th>Perfil</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cuenta in usuarios_perfil %}
+                                        <tr>
+                                            <td>{{ cuenta.username }}</td>
+                                            <td>{{ cuenta.get_full_name|default:"—" }}</td>
+                                            <td>{{ cuenta.nombre_grupo }}</td>
+                                            <td>
+                                                <select class="form-select" name="modo_{{ cuenta.pk }}">
+                                                    <option value="cliente" {% if cuenta.modo_actual == "cliente" %}selected{% endif %}>Cliente</option>
+                                                    <option value="lectura" {% if cuenta.modo_actual == "lectura" %}selected{% endif %}>Solo lectura</option>
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="4" class="text-muted text-center">No hay usuarios en la base de datos.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-primary">Guardar perfiles</button>
+                            <a class="btn btn-outline-secondary" href="{% url 'mis_bicicletas' %}">Entrar a UniPass</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

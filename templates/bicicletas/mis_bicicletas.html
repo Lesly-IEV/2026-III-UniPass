@@ -10,9 +10,11 @@
                 <h1 class="h3 fw-bold mb-1">Bicicletas registradas</h1>
                 <p class="text-muted mb-0">Cada bicicleta queda ligada al alumno que eliges al registrarla.</p>
             </div>
+            {% if not solo_lectura %}
             <a href="{% url 'registrar_bicicleta' %}" class="btn text-white" style="background-color: #6F1D32;">
                 Registrar bicicleta
             </a>
+            {% endif %}
         </div>
 
         {% if bicicletas %}
@@ -47,12 +49,15 @@
                                     <td>{{ bicicleta.usuario.user.get_full_name|default:bicicleta.usuario.user.username }}</td>
                                     <td>{{ bicicleta.usuario.matricula|default:"—" }}</td>
                                     <td class="text-end text-nowrap">
-                                        {% if perms.bicicletas.editar_propia_bicicleta or perms.bicicletas.administrar_bicicletas %}
+                                        {% if not solo_lectura %}
+                                            {% if perms.bicicletas.editar_propia_bicicleta or perms.bicicletas.administrar_bicicletas %}
                                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'editar_bicicleta' bicicleta.pk %}">Editar</a>
+                                            {% endif %}
                                         {% endif %}
                                         {% if perms.bicicletas.ver_codigo_qr or perms.bicicletas.administrar_bicicletas %}
                                             <a class="btn btn-outline-dark btn-sm" href="{% url 'ver_qr' bicicleta.pk %}">Código QR</a>
                                         {% endif %}
+                                        {% if not solo_lectura %}
                                         <form method="post" action="{% url 'eliminar_bicicleta' bicicleta.pk %}" class="d-inline">
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-outline-danger btn-sm"
@@ -60,6 +65,7 @@
                                                 Eliminar
                                             </button>
                                         </form>
+                                        {% endif %}
                                     </td>
                                 </tr>
                             {% endfor %}
@@ -131,7 +137,7 @@
                                 <p class="mb-1">Color: {{ bicicleta.color }}</p>
                                 <p class="mb-3">Folio: {{ bicicleta.numero_folio }}</p>
                                 <div class="d-flex flex-wrap gap-2">
-                                    {% if perms.bicicletas.editar_propia_bicicleta %}
+                                    {% if not solo_lectura and perms.bicicletas.editar_propia_bicicleta %}
                                         <a class="btn btn-outline-secondary btn-sm" href="{% url 'editar_bicicleta' bicicleta.pk %}">Editar</a>
                                     {% endif %}
                                     {% if perms.bicicletas.ver_codigo_qr %}
